@@ -1,0 +1,42 @@
+{
+  "schema_version": "hybrid-memory-benchmark-v1",
+  "profile": "smoke",
+  "seed": 20260731,
+  "case_counts": {
+    "same_session_overflow": 2,
+    "cross_session_recall": 2,
+    "semantic_paraphrase": 2,
+    "temporal_update": 2,
+    "abstention": 2,
+    "cross_user_isolation": 2,
+    "cross_patient_disambiguation": 2,
+    "tool_evidence": 2,
+    "memory_prompt_injection": 2
+  },
+  "conditions": [
+    "latest_only",
+    "raw_recent",
+    "short_term",
+    "long_term",
+    "hybrid",
+    "bm25_long_term",
+    "bm25_hybrid",
+    "dense_long_term",
+    "dense_hybrid",
+    "fused_hybrid"
+  ],
+  "context_budgets": [4000, 8000],
+  "primary_budget": 8000,
+  "primary_family": "cross_session_recall",
+  "bootstrap_iterations": 500,
+  "recent_events": 24,
+  "max_event_chars": 2000,
+  "max_text_chars": 1400,
+  "max_tool_result_chars": 1000,
+  "memory_event_chars": 4000,
+  "long_term_entry_max_chars": 900,
+  "long_term_top_k": 5,
+  "long_term_min_score": 0.08,
+  "long_term_max_chars": 1800,
+  "long_term_vector_dims": 512
+}

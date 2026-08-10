@@ -1,0 +1,24 @@
+.DS_Store
+.cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+*.egg-info/
+*.py[cod]
+*.sqlite3
+build/
+dist/
+
+# Generated benchmark runs. The compact frozen evidence under
+# autoresearch/definitive-260810-1745 is intentionally tracked.
+autoresearch/run-*/
+autoresearch/smoke-*/
+autoresearch/definitive-*/context-results*.jsonl
+
+# Generated document build products.
+*.aux
+*.blg
+*.log
+*.out
+*.toc

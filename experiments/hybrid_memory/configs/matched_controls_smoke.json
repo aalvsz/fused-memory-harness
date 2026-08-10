@@ -1,0 +1,61 @@
+{
+  "schema_version": "hybrid-memory-benchmark-v1",
+  "profile": "matched_controls_smoke",
+  "seed": 20260810,
+  "semantic_profile": "development",
+  "case_counts": {
+    "same_session_overflow": 1,
+    "cross_session_recall": 1,
+    "semantic_paraphrase": 8,
+    "temporal_update": 1,
+    "abstention": 1,
+    "cross_user_isolation": 2,
+    "cross_patient_disambiguation": 1,
+    "tool_evidence": 1,
+    "memory_prompt_injection": 1
+  },
+  "conditions": [
+    "dense_hybrid",
+    "matched_sparse_hybrid",
+    "union_hybrid",
+    "rrf_hybrid",
+    "cascade_hybrid",
+    "fused_hybrid"
+  ],
+  "context_budgets": [8000],
+  "primary_budget": 8000,
+  "primary_family": "semantic_paraphrase",
+  "analysis": {
+    "primary_candidate": "fused_hybrid",
+    "primary_baselines": [
+      "dense_hybrid",
+      "matched_sparse_hybrid",
+      "union_hybrid",
+      "rrf_hybrid",
+      "cascade_hybrid"
+    ],
+    "fused_candidate": "fused_hybrid",
+    "fused_baselines": [
+      "dense_hybrid",
+      "matched_sparse_hybrid",
+      "union_hybrid",
+      "rrf_hybrid",
+      "cascade_hybrid"
+    ],
+    "multiplicity_family": "matched_control_smoke",
+    "evidence_status": "smoke_only"
+  },
+  "bootstrap_iterations": 200,
+  "recent_events": 24,
+  "max_event_chars": 2000,
+  "max_text_chars": 1400,
+  "max_tool_result_chars": 1000,
+  "memory_event_chars": 4000,
+  "long_term_entry_max_chars": 900,
+  "long_term_top_k": 1,
+  "long_term_min_score": 0.05,
+  "long_term_max_chars": 1800,
+  "long_term_vector_dims": 512,
+  "fused_rrf_k": 60,
+  "fused_rrf_min_score": 0.005
+}

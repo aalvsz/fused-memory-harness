@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="34" text-anchor="middle" font-family="Arial" font-size="22" font-weight="bold">Context success at 8,000 characters</text>
+<line x1="90" y1="70" x2="90" y2="430" stroke="#172026"/>
+<line x1="90" y1="430" x2="870" y2="430" stroke="#172026"/>
+<text transform="translate(25 250.0) rotate(-90)" text-anchor="middle" font-family="Arial" font-size="15">Success rate</text>
+<line x1="90" y1="430.0" x2="870" y2="430.0" stroke="#d9e0e4" stroke-width="1"/>
+<text x="80" y="435.0" text-anchor="end" font-family="Arial" font-size="13">0%</text>
+<line x1="90" y1="358.0" x2="870" y2="358.0" stroke="#d9e0e4" stroke-width="1"/>
+<text x="80" y="363.0" text-anchor="end" font-family="Arial" font-size="13">20%</text>
+<line x1="90" y1="286.0" x2="870" y2="286.0" stroke="#d9e0e4" stroke-width="1"/>
+<text x="80" y="291.0" text-anchor="end" font-family="Arial" font-size="13">40%</text>
+<line x1="90" y1="214.0" x2="870" y2="214.0" stroke="#d9e0e4" stroke-width="1"/>
+<text x="80" y="219.0" text-anchor="end" font-family="Arial" font-size="13">60%</text>
+<line x1="90" y1="142.0" x2="870" y2="142.0" stroke="#d9e0e4" stroke-width="1"/>
+<text x="80" y="147.0" text-anchor="end" font-family="Arial" font-size="13">80%</text>
+<line x1="90" y1="70.0" x2="870" y2="70.0" stroke="#d9e0e4" stroke-width="1"/>
+<text x="80" y="75.0" text-anchor="end" font-family="Arial" font-size="13">100%</text>
+<rect x="101.7" y="299.1" width="32.3" height="130.9" fill="#1f77b4"/>
+<text x="117.9" y="291.1" text-anchor="middle" font-family="Arial" font-size="13">36%</text>
+<text x="117.9" y="458" text-anchor="middle" font-family="Arial" font-size="13">latest only</text>
+<rect x="157.4" y="168.2" width="32.3" height="261.8" fill="#9aa5ad"/>
+<text x="173.6" y="160.2" text-anchor="middle" font-family="Arial" font-size="13">73%</text>
+<text x="173.6" y="458" text-anchor="middle" font-family="Arial" font-size="13">raw recent</text>
+<rect x="213.1" y="168.2" width="32.3" height="261.8" fill="#2ca02c"/>
+<text x="229.3" y="160.2" text-anchor="middle" font-family="Arial" font-size="13">73%</text>
+<text x="229.3" y="458" text-anchor="middle" font-family="Arial" font-size="13">short term</text>
+<rect x="268.8" y="132.5" width="32.3" height="297.5" fill="#ffbf00"/>
+<text x="285.0" y="124.5" text-anchor="middle" font-family="Arial" font-size="13">83%</text>
+<text x="285.0" y="458" text-anchor="middle" font-family="Arial" font-size="13">long term</text>
+<rect x="324.6" y="103.4" width="32.3" height="326.6" fill="#7b61ff"/>
+<text x="340.7" y="95.4" text-anchor="middle" font-family="Arial" font-size="13">91%</text>
+<text x="340.7" y="458" text-anchor="middle" font-family="Arial" font-size="13">hybrid</text>
+<rect x="380.3" y="135.1" width="32.3" height="294.9" fill="#1f77b4"/>
+<text x="396.4" y="127.1" text-anchor="middle" font-family="Arial" font-size="13">82%</text>
+<text x="396.4" y="458" text-anchor="middle" font-family="Arial" font-size="13">bm25 long term</text>
+<rect x="436.0" y="135.1" width="32.3" height="294.9" fill="#9aa5ad"/>
+<text x="452.1" y="127.1" text-anchor="middle" font-family="Arial" font-size="13">82%</text>
+<text x="452.1" y="458" text-anchor="middle" font-family="Arial" font-size="13">bm25 hybrid</text>
+<rect x="491.7" y="134.5" width="32.3" height="295.5" fill="#2ca02c"/>
+<text x="507.9" y="126.5" text-anchor="middle" font-family="Arial" font-size="13">82%</text>
+<text x="507.9" y="458" text-anchor="middle" font-family="Arial" font-size="13">dense long term</text>
+<rect x="547.4" y="101.7" width="32.3" height="328.3" fill="#ffbf00"/>
+<text x="563.6" y="93.7" text-anchor="middle" font-family="Arial" font-size="13">91%</text>
+<text x="563.6" y="458" text-anchor="middle" font-family="Arial" font-size="13">dense hybrid</text>
+<rect x="603.1" y="70.0" width="32.3" height="360.0" fill="#7b61ff"/>
+<text x="619.3" y="62.0" text-anchor="middle" font-family="Arial" font-size="13">100%</text>
+<text x="619.3" y="458" text-anchor="middle" font-family="Arial" font-size="13">fused hybrid</text>
+<rect x="658.8" y="102.4" width="32.3" height="327.6" fill="#1f77b4"/>
+<text x="675.0" y="94.4" text-anchor="middle" font-family="Arial" font-size="13">91%</text>
+<text x="675.0" y="458" text-anchor="middle" font-family="Arial" font-size="13">matched sparse hybrid</text>
+<rect x="714.6" y="101.7" width="32.3" height="328.3" fill="#9aa5ad"/>
+<text x="730.7" y="93.7" text-anchor="middle" font-family="Arial" font-size="13">91%</text>
+<text x="730.7" y="458" text-anchor="middle" font-family="Arial" font-size="13">union hybrid</text>
+<rect x="770.3" y="100.1" width="32.3" height="329.9" fill="#2ca02c"/>
+<text x="786.4" y="92.1" text-anchor="middle" font-family="Arial" font-size="13">92%</text>
+<text x="786.4" y="458" text-anchor="middle" font-family="Arial" font-size="13">rrf hybrid</text>
+<rect x="826.0" y="102.4" width="32.3" height="327.6" fill="#ffbf00"/>
+<text x="842.1" y="94.4" text-anchor="middle" font-family="Arial" font-size="13">91%</text>
+<text x="842.1" y="458" text-anchor="middle" font-family="Arial" font-size="13">cascade hybrid</text>
+</svg>

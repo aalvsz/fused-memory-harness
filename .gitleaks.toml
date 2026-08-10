@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Frozen synthetic isolation tokens; dataset identity is bound by its published hash"
+paths = ['''^autoresearch/definitive-260810-1745/cases\.jsonl$''']
