@@ -1,5 +1,10 @@
 # Fused Memory
 
+![Fused Memory — Scoped retrieval. Reproducible evidence.](assets/social-preview.jpg)
+
+[![Tests](https://github.com/aalvsz/fused-memory-harness/actions/workflows/tests.yml/badge.svg)](https://github.com/aalvsz/fused-memory-harness/actions/workflows/tests.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-2ea44f.svg)](LICENSE)
+
 Fused Memory is a downstream-model-agnostic retrieval method for long-term
 agents. It first enforces application and user scope, then combines calibrated
 dense and BM25 evidence with recency tie-breaking and source-aware ranking.
