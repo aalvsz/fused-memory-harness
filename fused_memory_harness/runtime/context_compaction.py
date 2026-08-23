@@ -1,8 +1,7 @@
 """Bound conversation history before it is sent to a downstream model.
 
-The benchmark uses these dependency-light helpers to compare raw recent
-history, compacted short-term context, and retrieved long-term memory under the
-same character budget.
+These dependency-light helpers keep recent history, compacted context, and
+retrieved long-term memory within the same character budget.
 """
 
 from __future__ import annotations

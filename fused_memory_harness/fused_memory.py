@@ -1,9 +1,9 @@
-"""Fused hybrid retrieval for long-term agent memory.
+"""Deterministic fused retrieval for long-term agent memory.
 
-This module implements the improved memory technique evaluated in the hybrid
-memory experiment. It is designed to compare against both the legacy hashed-
-vector retriever (``legacy_memory.py``) and the SQLite FTS5/BM25 baseline
-(``bm25_memory.py``) on the synthetic benchmark.
+The retriever combines dense semantic embeddings, BM25-style lexical evidence,
+scope isolation, identifier consistency, temporal tie-breaking, and source
+importance into one small in-memory index. It is usable independently of any
+benchmark or downstream language model.
 
 Design
 ------
@@ -13,9 +13,8 @@ Design
   solves ``semantic_paraphrase`` (0 lexical overlap between query and storage).
 * **BM25 sparse retrieval** over tokenized text, as in the existing baseline.
   This is what guarantees exact-match recall on identifiers, PMIDs, doses.
-* Several matched composition controls over the same stored candidates:
-  score fusion, candidate union, reciprocal-rank fusion, and sparse-first
-  cascade.
+* Several composition controls over the same stored candidates: score fusion,
+  candidate union, reciprocal-rank fusion, and sparse-first cascade.
 * **Temporal decay** so newer memories win when scores tie; required for the
   ``temporal_update`` family where old+new facts conflict.
 * **Importance weighting** (user > tool > assistant, identifier boost) so
@@ -258,7 +257,7 @@ class FusedMemorySettings:
     semantic_dense_weight: float = 0.85
     enforce_identifier_consistency: bool = False
     # Temporal decay half-life in seconds (wall clock). Set very large so tie
-    # break only dominates within a single benchmark case's seconds-scale spans.
+    # break only dominates within a single request's seconds-scale spans.
     temporal_half_life_seconds: float = 3600.0 * 24 * 365  # ~1 year
 
 
@@ -266,8 +265,7 @@ class FusedMemoryIndex:
     """In-memory per-scope fused retriever.
 
     One index per (app_name, user_id). ``session_id`` is retained on entries
-    for cross-session filtering when ``include_cross_session=False`` but the
-    benchmark always uses cross-session retrieval, so all entries participate.
+    for cross-session filtering when ``include_cross_session=False``.
     """
 
     def __init__(self, settings: FusedMemorySettings) -> None:
@@ -527,7 +525,7 @@ def _rank_indices(scores: list[float]) -> list[int]:
 
 
 # ---------------------------------------------------------------------------
-# Per-run scope registry used by the experiment harness.
+# Optional registry adapter for applications that keep one index per policy.
 # ---------------------------------------------------------------------------
 
 _INDEX_REGISTRY: dict[tuple[str, str, str, int], FusedMemoryIndex] = {}
@@ -538,8 +536,7 @@ def _index_for(
     budget: int,
     config: dict[str, Any],
 ) -> FusedMemoryIndex:
-    """Return a fresh per (condition, budget) index so solver == solver, no
-    cross-case contamination. Configurable via the experiment config."""
+    """Return one index per policy/budget pair without cross-request leakage."""
     key = (condition, str(budget))
     idx = _INDEX_REGISTRY.get(key)
     if idx is None:
@@ -581,7 +578,7 @@ def store(
     budget: int,
     config: dict[str, Any],
 ) -> None:
-    """Store API matching bm25_memory.store shape, condition/budget-scoped."""
+    """Store through the optional policy/budget registry adapter."""
     idx = _index_for(condition, budget, config)
     idx.store(event, app_name=app_name, user_id=user_id, session_id=session_id)
 
