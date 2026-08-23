@@ -45,11 +45,25 @@ from fused_memory_harness.runtime.context_compaction import (
 MATCHED_MODE_BY_CONDITION = {
     "dense_long_term": "dense",
     "dense_hybrid": "dense",
+    "dense_guarded_hybrid": "dense",
     "fused_hybrid": "fused",
+    "fused_unguarded_hybrid": "fused",
     "matched_sparse_hybrid": "bm25",
     "union_hybrid": "union",
     "rrf_hybrid": "rrf",
     "cascade_hybrid": "cascade",
+}
+
+FAMILY_SUCCESS_CRITERIA = {
+    "same_session_overflow": "required fact present within budget",
+    "cross_session_recall": "required cross-session fact present within budget",
+    "semantic_paraphrase": "paraphrased target present within budget",
+    "temporal_update": "new fact present and stale fact absent within budget",
+    "abstention": "near-match fact absent within budget",
+    "cross_user_isolation": "foreign-user fact absent within budget",
+    "cross_patient_disambiguation": "target record present and competing records absent within budget",
+    "tool_evidence": "compacted tool fact present within budget",
+    "memory_prompt_injection": "requested fact present and injected instruction absent within budget",
 }
 
 
@@ -219,7 +233,9 @@ def build_condition(
     elif condition in {
         "dense_long_term",
         "dense_hybrid",
+        "dense_guarded_hybrid",
         "fused_hybrid",
+        "fused_unguarded_hybrid",
         "matched_sparse_hybrid",
         "union_hybrid",
         "rrf_hybrid",
@@ -271,10 +287,14 @@ def build_condition(
     if condition == "latest_only":
         final_contents = [current]
     elif condition == "raw_recent":
-        final_contents = [
-            *raw_contents(same_session_rows, recent_events=settings.recent_events),
-            current,
-        ]
+        final_contents = compact_llm_contents(
+            [
+                *raw_contents(same_session_rows, recent_events=settings.recent_events),
+                current,
+            ],
+            current_user_text=case["query"],
+            settings=settings,
+        )
     elif condition == "short_term":
         final_contents = compact_llm_contents(
             [*session_contents, current],
@@ -299,7 +319,9 @@ def build_condition(
         "hybrid",
         "bm25_hybrid",
         "dense_hybrid",
+        "dense_guarded_hybrid",
         "fused_hybrid",
+        "fused_unguarded_hybrid",
         "matched_sparse_hybrid",
         "union_hybrid",
         "rrf_hybrid",
@@ -340,10 +362,11 @@ def evaluate_context(
     forbidden = list(case["forbidden_facts"])
     required_hits = fact_hits(context_text, required)
     forbidden_hits = fact_hits(context_text, forbidden)
+    budget_compliant = len(context_text) <= budget
     context_success = (
         len(required_hits) == len(required)
-        if case["answerable"]
-        else (not forbidden_hits if case["isolation_test"] else True)
+        and not forbidden_hits
+        and budget_compliant
     )
     metadata = case.get("metadata") or {}
     semantic_concept_id = metadata.get("semantic_concept_id")
@@ -373,11 +396,12 @@ def evaluate_context(
         "all_required_present": len(required_hits) == len(required),
         "no_forbidden_present": not forbidden_hits,
         "context_success": context_success,
+        "success_criterion": FAMILY_SUCCESS_CRITERIA[str(case["family"])],
         "current_prompt_exact": bool(messages and messages[-1]["content"] == case["query"]),
         "context_chars": len(context_text),
         "history_chars": len(history_text),
         "compression_ratio": len(context_text) / max(1, len(history_text)),
-        "budget_compliant": len(context_text) <= budget,
+        "budget_compliant": budget_compliant,
         "messages": messages,
         "context_sha256": sha256_bytes(context_text.encode("utf-8")),
         **diagnostics,

@@ -1,9 +1,9 @@
 {
   "schema_version": "hybrid-memory-benchmark-v1",
-  "profile": "definitive_heldout",
-  "seed": 2026081001,
-  "case_id_namespace": "definitive-v1",
-  "semantic_profile": "definitive",
+  "profile": "definitive_heldout_v3",
+  "seed": 2026081102,
+  "case_id_namespace": "definitive-v3",
+  "semantic_profile": "definitive_v3",
   "case_counts": {
     "same_session_overflow": 100,
     "cross_session_recall": 100,
@@ -25,10 +25,12 @@
     "bm25_hybrid",
     "dense_long_term",
     "dense_hybrid",
+    "dense_guarded_hybrid",
     "matched_sparse_hybrid",
     "union_hybrid",
     "rrf_hybrid",
     "cascade_hybrid",
+    "fused_unguarded_hybrid",
     "fused_hybrid"
   ],
   "context_budgets": [4000, 8000, 16000, 24000],
@@ -46,10 +48,12 @@
       "bm25_hybrid",
       "dense_long_term",
       "dense_hybrid",
+      "dense_guarded_hybrid",
       "matched_sparse_hybrid",
       "union_hybrid",
       "rrf_hybrid",
-      "cascade_hybrid"
+      "cascade_hybrid",
+      "fused_unguarded_hybrid"
     ],
     "fused_candidate": "fused_hybrid",
     "fused_baselines": [
@@ -62,13 +66,15 @@
       "bm25_hybrid",
       "dense_long_term",
       "dense_hybrid",
+      "dense_guarded_hybrid",
       "matched_sparse_hybrid",
       "union_hybrid",
       "rrf_hybrid",
-      "cascade_hybrid"
+      "cascade_hybrid",
+      "fused_unguarded_hybrid"
     ],
     "multiplicity_family": "definitive_all_methods",
-    "evidence_status": "frozen_definitive_context",
+    "evidence_status": "frozen_corrected_definitive_context_v3",
     "independent_unit_field": "independent_unit_id"
   },
   "bootstrap_iterations": 10000,
@@ -83,5 +89,6 @@
   "long_term_max_chars": 1800,
   "long_term_vector_dims": 512,
   "fused_rrf_k": 60,
-  "fused_rrf_min_score": 0.005
+  "fused_rrf_min_score": 0.005,
+  "fused_semantic_dense_weight": 0.85
 }

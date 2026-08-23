@@ -71,6 +71,8 @@ _BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
 _model_lock = threading.Lock()
 _model_cache: dict[str, TextEmbedding] = {}
+_embedding_cache_lock = threading.Lock()
+_embedding_cache: dict[tuple[str, str], np.ndarray] = {}
 
 # bge-small-en-v1.5 publishes the instruction above for query encoding; passage
 # encoding uses the raw text. Using the published prefix empirically widens the
@@ -96,9 +98,21 @@ def embed_texts(texts: list[str], *, model_name: str = _DEFAULT_MODEL) -> np.nda
     """
     if not texts:
         return np.zeros((0, _DEFAULT_DIM), dtype=np.float32)
-    model = _get_model(model_name)
-    rows = [np.asarray(v, dtype=np.float32) for v in model.embed(texts, batch_size=64)]
-    return np.vstack(rows) if rows else np.zeros((0, _DEFAULT_DIM), dtype=np.float32)
+    keys = [(model_name, text) for text in texts]
+    with _embedding_cache_lock:
+        missing = [key for key in dict.fromkeys(keys) if key not in _embedding_cache]
+    if missing:
+        model = _get_model(model_name)
+        computed = [
+            np.asarray(value, dtype=np.float32)
+            for value in model.embed([text for _, text in missing], batch_size=64)
+        ]
+        with _embedding_cache_lock:
+            for key, value in zip(missing, computed, strict=True):
+                _embedding_cache.setdefault(key, value)
+    with _embedding_cache_lock:
+        rows = [_embedding_cache[key] for key in keys]
+    return np.vstack(rows)
 
 
 def embed_query(text: str, *, model_name: str = _DEFAULT_MODEL) -> np.ndarray:
@@ -153,6 +167,39 @@ _IDENTIFIER_RE = re.compile(
     r"\b(?:Patient/[A-Za-z0-9_.-]+|PMID[:\s]*\d+|topic\s+[A-Z0-9]+|FHIR|CKD)\b",
     re.I,
 )
+_IDENTIFIER_PATTERNS = {
+    "patient": re.compile(r"\bPatient/[A-Za-z0-9_.-]+\b", re.I),
+    "pmid": re.compile(r"\bPMID[:\s]*\d+\b", re.I),
+    "topic": re.compile(r"\btopic\s+[A-Z0-9]+\b", re.I),
+}
+
+
+def _identifier_keys(text: str) -> dict[str, set[str]]:
+    """Extract normalized high-precision identifiers by namespace."""
+    keys: dict[str, set[str]] = {}
+    for kind, pattern in _IDENTIFIER_PATTERNS.items():
+        values = {" ".join(match.group(0).casefold().split()) for match in pattern.finditer(text)}
+        if values:
+            keys[kind] = values
+    return keys
+
+
+def _identifier_compatible(query: str, entry_text: str) -> bool:
+    """Require exact namespace matches when the query names an identifier.
+
+    Dense similarity and token overlap may make nearby record identifiers look
+    relevant.  A query that names a high-precision identifier therefore admits
+    only candidates carrying that exact identifier in every named namespace.
+    Queries without recognized identifiers retain the full candidate set.
+    """
+    query_keys = _identifier_keys(query)
+    if not query_keys:
+        return True
+    entry_keys = _identifier_keys(entry_text)
+    return all(
+        kind in entry_keys and not values.isdisjoint(entry_keys[kind])
+        for kind, values in query_keys.items()
+    )
 
 
 def _source_kind(event: Any, text: str) -> str:
@@ -208,6 +255,8 @@ class FusedMemorySettings:
     rrf_min_score: float = 0.005
     dense_weight: float = 0.6
     sparse_weight: float = 0.4
+    semantic_dense_weight: float = 0.85
+    enforce_identifier_consistency: bool = False
     # Temporal decay half-life in seconds (wall clock). Set very large so tie
     # break only dominates within a single benchmark case's seconds-scale spans.
     temporal_half_life_seconds: float = 3600.0 * 24 * 365  # ~1 year
@@ -286,12 +335,20 @@ class FusedMemoryIndex:
             entries = [e for e in entries if e.session_id == session_id]
             if not entries:
                 return []
+        if settings.enforce_identifier_consistency:
+            entries = [entry for entry in entries if _identifier_compatible(query, entry.text)]
+            if not entries:
+                return []
         effective_top_k = int(top_k) if top_k is not None else settings.retrieve_top_k
         valid_modes = {"dense", "bm25", "fused", "union", "rrf", "cascade"}
         if mode not in valid_modes:
             raise ValueError(f"unknown matched retrieval mode: {mode}")
 
         query_tokens = _tokens(query)
+        query_has_precise_identifier = bool(_identifier_keys(query))
+        query_has_lexical_anchor = bool(
+            re.search(r"\b[A-Z]{2,}(?:-[A-Z0-9]+)+\b", query)
+        )
 
         # --- dense arm (semantic) ---
         dense_scores: list[float] = []
@@ -361,10 +418,12 @@ class FusedMemoryIndex:
             # strong BM25 hit maps near 1.0 and zero hits map to 0.5->0 only via
             # the dense arm. Use s_max for a self-calibrating midpoint.
             s_n = _sigmoid(s_score - 0.5 * s_max) if s_max > 0 else 0.0
-            weighted_score = (
-                settings.dense_weight * d_n
-                + settings.sparse_weight * s_n
+            dense_weight = (
+                settings.dense_weight
+                if query_has_precise_identifier or query_has_lexical_anchor
+                else settings.semantic_dense_weight
             )
+            weighted_score = dense_weight * d_n + (1.0 - dense_weight) * s_n
             # temporal decay: newer wins ties. Use a mild multiplier so it only
             # breaks near-ties, not decisive score advantages.
             age = max(0.0, now - entry.created_at)
@@ -493,6 +552,11 @@ def _index_for(
             include_cross_session=bool(config.get("include_cross_session", True)),
             dense_weight=float(config.get("fused_dense_weight", 0.6)),
             sparse_weight=float(config.get("fused_sparse_weight", 0.4)),
+            semantic_dense_weight=float(config.get("fused_semantic_dense_weight", 0.85)),
+            enforce_identifier_consistency=condition in {
+                "fused_hybrid",
+                "dense_guarded_hybrid",
+            },
             rrf_k=int(config.get("fused_rrf_k", 60)),
             rrf_min_score=float(config.get("fused_rrf_min_score", 0.005)),
         )

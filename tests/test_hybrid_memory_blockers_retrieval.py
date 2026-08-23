@@ -16,10 +16,13 @@ from experiments.hybrid_memory.context_benchmark import MATCHED_MODE_BY_CONDITIO
 from experiments.hybrid_memory.fused_memory import (
     FusedMemoryIndex,
     FusedMemorySettings,
+    _identifier_compatible,
     _rank_indices,
 )
 from experiments.hybrid_memory.generate_cases import (
     SEMANTIC_DEFINITIVE_POOL,
+    SEMANTIC_DEFINITIVE_V2_POOL,
+    SEMANTIC_DEFINITIVE_V3_POOL,
     SEMANTIC_DEVELOPMENT_POOL,
     SEMANTIC_HELDOUT_POOL,
     generate,
@@ -96,6 +99,28 @@ def test_definitive_semantic_pool_has_100_independent_disjoint_concepts():
     assert heldout.isdisjoint(definitive)
 
 
+def test_definitive_v2_semantic_pool_is_fresh_and_independent():
+    prior = _pool_text(SEMANTIC_DEVELOPMENT_POOL) | _pool_text(SEMANTIC_HELDOUT_POOL)
+    prior |= _pool_text(SEMANTIC_DEFINITIVE_POOL)
+    definitive_v2 = _pool_text(SEMANTIC_DEFINITIVE_V2_POOL)
+
+    assert len(SEMANTIC_DEFINITIVE_V2_POOL) == 100
+    assert len({item["concept_id"] for item in SEMANTIC_DEFINITIVE_V2_POOL}) == 100
+    assert all(len(item["queries"]) == 1 for item in SEMANTIC_DEFINITIVE_V2_POOL)
+    assert prior.isdisjoint(definitive_v2)
+
+
+def test_definitive_v3_semantic_pool_is_fresh_and_independent():
+    prior = _pool_text(SEMANTIC_DEVELOPMENT_POOL) | _pool_text(SEMANTIC_HELDOUT_POOL)
+    prior |= _pool_text(SEMANTIC_DEFINITIVE_POOL) | _pool_text(SEMANTIC_DEFINITIVE_V2_POOL)
+    definitive_v3 = _pool_text(SEMANTIC_DEFINITIVE_V3_POOL)
+
+    assert len(SEMANTIC_DEFINITIVE_V3_POOL) == 100
+    assert len({item["concept_id"] for item in SEMANTIC_DEFINITIVE_V3_POOL}) == 100
+    assert all(len(item["queries"]) == 1 for item in SEMANTIC_DEFINITIVE_V3_POOL)
+    assert prior.isdisjoint(definitive_v3)
+
+
 def test_definitive_generation_is_frozen_complete_and_namespaced():
     config = load_config(DEFINITIVE_CONFIG)
     first = generate(config)
@@ -106,8 +131,8 @@ def test_definitive_generation_is_frozen_complete_and_namespaced():
     assert len(first) == 1100
     assert len(semantic) == 100
     assert len({row["metadata"]["semantic_concept_id"] for row in semantic}) == 100
-    assert all(row["case_id"].startswith("definitive-v1-") for row in first)
-    assert len(config["conditions"]) == 14
+    assert all(row["case_id"].startswith("definitive-v3-") for row in first)
+    assert len(config["conditions"]) == 16
     assert config["context_budgets"] == [4000, 8000, 16000, 24000]
 
 
@@ -115,7 +140,9 @@ def test_matched_condition_wiring_is_explicit():
     assert MATCHED_MODE_BY_CONDITION == {
         "dense_long_term": "dense",
         "dense_hybrid": "dense",
+        "dense_guarded_hybrid": "dense",
         "fused_hybrid": "fused",
+        "fused_unguarded_hybrid": "fused",
         "matched_sparse_hybrid": "bm25",
         "union_hybrid": "union",
         "rrf_hybrid": "rrf",
@@ -125,6 +152,56 @@ def test_matched_condition_wiring_is_explicit():
 
 def test_rank_ties_are_deterministic():
     assert _rank_indices([0.5, 0.5, 0.7]) == [1, 2, 0]
+
+
+def test_identifier_compatibility_rejects_nearby_records():
+    assert _identifier_compatible(
+        "Medication for Patient/SYN-EXACT-001?",
+        "Patient/SYN-EXACT-001 takes metformin.",
+    )
+    assert not _identifier_compatible(
+        "Medication for Patient/SYN-EXACT-001?",
+        "Patient/SYN-NEAR-001 takes metformin.",
+    )
+    assert _identifier_compatible("Which plan did we choose?", "The selected plan was blue.")
+
+
+def test_identifier_guard_makes_missing_record_abstain(monkeypatch):
+    import experiments.hybrid_memory.fused_memory as fused
+
+    monkeypatch.setattr(
+        fused,
+        "embed_texts",
+        lambda texts, *, model_name: np.ones((len(texts), 2), dtype=np.float32),
+    )
+    monkeypatch.setattr(
+        fused,
+        "embed_query",
+        lambda text, *, model_name: np.ones(2, dtype=np.float32),
+    )
+    index = FusedMemoryIndex(
+        FusedMemorySettings(retrieve_top_k=1, enforce_identifier_consistency=True)
+    )
+    index.store(
+        _event("Patient/SYN-KNOWN-001 takes metformin.", timestamp=1.0),
+        app_name="app",
+        user_id="owner",
+        session_id="s1",
+    )
+
+    assert index.retrieve(
+        "Medication for Patient/SYN-MISSING-001?",
+        app_name="app",
+        user_id="owner",
+        mode="fused",
+    ) == []
+    exact = index.retrieve(
+        "Medication for Patient/SYN-KNOWN-001?",
+        app_name="app",
+        user_id="owner",
+        mode="fused",
+    )
+    assert exact[0]["text"] == "Patient/SYN-KNOWN-001 takes metformin."
 
 
 def test_matched_modes_share_scope_and_union_complements_arms(monkeypatch):

@@ -6,35 +6,30 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-2ea44f.svg)](LICENSE)
 
 Fused Memory is a downstream-model-agnostic retrieval method for long-term
-agents. It first enforces application and user scope, then combines calibrated
-dense and BM25 evidence with recency tie-breaking and source-aware ranking.
+agents. It first enforces application, user, and structured-identifier
+consistency, then combines calibrated dense and BM25 evidence with
+query-adaptive weights, recency tie-breaking, and source-aware ranking.
 
 The central problem is coverage. Exact identifiers favor lexical retrieval;
 paraphrases favor dense retrieval; updates require temporal ordering; and
 cross-user safety requires a structural boundary before ranking. Fused Memory
 puts those signals into one deterministic retrieval policy.
 
-## Definitive benchmark
+The harness uses a synthetic, domain-mixed reference agent. General preference
+memories are combined with clinical-style record fixtures so identifier,
+disambiguation, and isolation behavior is easy to inspect. These fixtures are
+test data, not a medical-agent dependency: deployments configure their own
+identifier namespaces, such as account IDs, issue keys, or document IDs.
 
-The frozen benchmark evaluates 14 independently executed memory methods on
-1,100 unseen synthetic cases across nine failure-mode families and four context
-budgets. Each method receives the same memories, queries, and top-one
-constraint, producing 61,600 paired evaluations.
+## Benchmark harness
 
-At the primary 8,000-character budget:
-
-| Method | Retrieval success |
-| --- | ---: |
-| **Fused Memory** | **1,100/1,100 (100.0%)** |
-| Gated reciprocal-rank fusion | 1,008/1,100 (91.6%) |
-| Dense + recent | 1,003/1,100 (91.2%) |
-| Union + recent | 1,003/1,100 (91.2%) |
-| Legacy hybrid | 998/1,100 (90.7%) |
-
-Fused Memory was the only tested method to retrieve every target in every
-family. A second execution reproduced every deterministic retrieval decision.
-The isolation suite observed zero forbidden-context hits in 16,800 deterministic
-probes; that is a benchmark count, not a deployment leak-rate estimate.
+The benchmark code evaluates 16 independently executed retrieval methods on
+1,100 synthetic cases across nine failure-mode families and four context
+budgets. Every method receives the same memories, queries, and top-one
+constraint. The primary endpoint is retrieval success before answer generation;
+the harness also records forbidden-fact checks, context size, and budget
+compliance. Run outputs are generated locally and are intentionally excluded
+from this repository.
 
 The benchmark evaluates retrieval before answer generation. Fused Memory can
 therefore feed any downstream language model, while final answer quality still
@@ -43,12 +38,11 @@ depends on that model.
 ## Repository contents
 
 - `experiments/hybrid_memory/`: generator, retrievers, benchmark, validation,
-  analysis, frozen configuration, and protocol.
+  analysis, configuration, and protocol.
 - `fused_memory_harness/runtime/`: standalone context-compaction and legacy
   retrieval controls required by the comparison.
-- `autoresearch/definitive-260810-1745/`: synthetic cases and compact frozen
-  evidence. The two 134 MiB raw context dumps are omitted from Git and can be
-  regenerated from the dataset and configuration.
+- `autoresearch/` is reserved for local benchmark outputs and is ignored by
+  Git; no experimental result artifacts are published here.
 - `tests/`: focused behavioral, provenance, and reproduction tests.
 
 No production application, patient data, deployment configuration, credentials,
@@ -92,7 +86,7 @@ uv run python -m experiments.hybrid_memory.analyze \
   --output-dir "$run_dir/analysis"
 ```
 
-## Reproduce the definitive retrieval benchmark
+## Run the retrieval benchmark locally
 
 The primary and reproduction runs each take approximately 15--20 minutes on a
 modern laptop CPU. GPU acceleration is not required for this workload.
@@ -124,10 +118,10 @@ uv run python -m experiments.hybrid_memory.validate_artifacts \
   --output "$run_dir/validation.json"
 ```
 
-Read the [frozen protocol](experiments/hybrid_memory/DEFINITIVE_BENCHMARK_PROTOCOL.md)
-before interpreting or extending the benchmark. The current evidence establishes
-superiority on this synthetic retrieval benchmark; it does not establish
-universal end-to-end agent superiority or production security.
+Read the [benchmark protocol](experiments/hybrid_memory/DEFINITIVE_BENCHMARK_PROTOCOL.md)
+before interpreting or extending the benchmark. The repository contains the
+method and evaluation code only; it makes no leaderboard or universal
+end-to-end agent claim.
 
 ## License
 

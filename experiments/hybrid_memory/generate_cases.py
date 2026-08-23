@@ -244,6 +244,207 @@ def _build_definitive_semantic_pool() -> tuple[dict[str, Any], ...]:
 SEMANTIC_DEFINITIVE_POOL = _build_definitive_semantic_pool()
 
 
+# Corrected definitive v2 semantic set. These 100 concept-value units were
+# frozen after the strict success predicates and identifier-consistency guard
+# were implemented. They are disjoint from every earlier semantic pool.
+_DEFINITIVE_V2_SEMANTIC_SCHEMAS = (
+    ("branch_retention", "inactive branch retention rule", "cleaning up old code branches", (
+        "remove them after fourteen days", "archive them after thirty days", "retain them for one quarter",
+        "delete them after the release closes", "keep them until the owning team approves removal")),
+    ("artifact_signature", "release artifact signature policy", "verifying published build artifacts", (
+        "Sigstore keyless signing", "an offline Ed25519 signature", "a hardware-backed RSA signature",
+        "a GPG signature from the release key", "a cloud KMS signing operation")),
+    ("log_timezone", "operational log timezone", "timestamps in service logs", (
+        "Coordinated Universal Time", "Central European Time", "Japan Standard Time",
+        "Eastern Standard Time", "Australian Eastern Time")),
+    ("dependency_updates", "dependency update schedule", "refreshing third-party packages", (
+        "every Tuesday morning", "once per monthly release", "every second Wednesday",
+        "only during quarterly maintenance", "each Friday before noon")),
+    ("handoff_format", "incident handoff format", "transferring an active incident", (
+        "a timeline plus open decisions", "a five-line status brief", "a recorded voice summary",
+        "a checklist with named owners", "a dashboard link plus the latest hypothesis")),
+    ("meeting_record", "meeting record policy", "capturing decisions from project calls", (
+        "written minutes without audio", "an audio recording deleted after seven days",
+        "a transcript with speaker labels", "decision notes only", "a video recording with chapter markers")),
+    ("access_review", "privileged access review cadence", "checking administrator permissions", (
+        "every thirty days", "at the end of each quarter", "on alternate Mondays",
+        "after every production release", "twice each calendar year")),
+    ("cache_expiry", "default cache expiration", "how long computed responses remain cached", (
+        "fifteen minutes", "two hours", "one business day", "seven days", "until the next deployment")),
+    ("release_ring", "default release audience", "who receives a new version first", (
+        "internal maintainers", "five percent of customers", "the beta cohort", "one pilot region",
+        "all staff accounts")),
+    ("branch_prefix", "work branch naming prefix", "naming a new development branch", (
+        "feature slash ticket number", "initials slash short description", "issue dash numeric identifier",
+        "date slash task name", "team slash component name")),
+    ("citation_format", "default citation convention", "formatting references in technical reports", (
+        "IEEE numeric citations", "APA seventh edition", "Chicago author-date", "Vancouver numbering",
+        "ACM reference format")),
+    ("learning_block", "recurring study block", "the reserved learning session", (
+        "Thursday from 18:00 to 19:30", "Monday from 07:30 to 08:30",
+        "Saturday from 10:00 to 12:00", "Tuesday from 20:00 to 21:00",
+        "Friday from 16:30 to 18:00")),
+    ("expense_currency", "default expense currency", "submitting travel expenses", (
+        "euros", "pounds sterling", "United States dollars", "Swiss francs", "Japanese yen")),
+    ("quiet_hours", "notification quiet interval", "suppressing non-urgent notifications", (
+        "22:00 through 07:00", "21:30 through 06:30", "23:00 through 08:00",
+        "20:00 through 06:00", "midnight through 09:00")),
+    ("recovery_region", "disaster recovery location", "restoring service after a regional outage", (
+        "the Stockholm region", "the Milan region", "the Warsaw region", "the Lisbon region",
+        "the Helsinki region")),
+    ("archive_format", "long-term archive format", "compressing completed project material", (
+        "a Zstandard tar archive", "a ZIP file with AES encryption", "a read-only SquashFS image",
+        "a gzip-compressed tarball", "an uncompressed content-addressed bundle")),
+    ("flaky_test", "flaky test retry rule", "handling an intermittently failing test", (
+        "retry once then fail", "retry twice with the same seed", "quarantine it after three failures",
+        "never retry automatically", "retry once on a separate runner")),
+    ("export_format", "default analytics export", "delivering tabular analysis data", (
+        "Parquet with Zstandard compression", "UTF-8 comma-separated values", "newline-delimited JSON",
+        "an Apache Arrow stream", "an OpenDocument spreadsheet")),
+    ("status_cadence", "incident status cadence", "sending updates during an outage", (
+        "every fifteen minutes", "every half hour", "at each material change", "once per hour",
+        "at the start and end of mitigation")),
+    ("login_factor", "preferred login factor", "authenticating to administrative systems", (
+        "a FIDO2 security key", "a platform passkey", "a time-based one-time password",
+        "a smart card certificate", "a hardware token challenge")),
+)
+
+_DEFINITIVE_V2_QUERY_FRAMES = (
+    "What arrangement did we settle on for {subject}?",
+    "Recall the earlier decision about {subject}.",
+    "Which preference is stored for {subject}?",
+    "What was the recorded choice concerning {subject}?",
+    "Which setting should be applied to {subject}?",
+)
+
+
+def _build_definitive_v2_semantic_pool() -> tuple[dict[str, Any], ...]:
+    items: list[dict[str, Any]] = []
+    for concept_id, storage_label, query_subject, values in _DEFINITIVE_V2_SEMANTIC_SCHEMAS:
+        for value_index, value in enumerate(values):
+            rejected_a = values[(value_index + 2) % len(values)]
+            rejected_b = values[(value_index + 3) % len(values)]
+            items.append(
+                {
+                    "concept_id": f"v2_{concept_id}_{value_index + 1:02d}",
+                    "stored": f"Final memory: {storage_label} = {value}.",
+                    "queries": (
+                        _DEFINITIVE_V2_QUERY_FRAMES[value_index].format(subject=query_subject),
+                    ),
+                    "answer_facts": (value,),
+                    "distractors": (
+                        f"An assistant brainstorm mentioned {rejected_a} for {query_subject}; it was rejected.",
+                        f"A superseded draft suggested {rejected_b} for {query_subject}, not the adopted choice.",
+                    ),
+                }
+            )
+    return tuple(items)
+
+
+SEMANTIC_DEFINITIVE_V2_POOL = _build_definitive_v2_semantic_pool()
+
+
+# Definitive v3 evaluation set: new concepts, values, queries, and distractors
+# not used while designing or debugging the corrected method.
+_DEFINITIVE_V3_SEMANTIC_SCHEMAS = (
+    ("commit_signoff", "commit sign-off requirement", "approving source-control commits", (
+        "a verified developer certificate", "a maintainer co-signature", "a signed-off-by trailer",
+        "an automated policy attestation", "a release-manager approval")),
+    ("dashboard_theme", "monitoring dashboard theme", "displaying operational dashboards", (
+        "a high-contrast dark palette", "a light palette with blue accents", "a colorblind-safe neutral palette",
+        "a monochrome incident palette", "an automatic day-and-night theme")),
+    ("data_residency", "customer data residency", "placing customer-controlled records", (
+        "within the European Economic Area", "within Canada", "within Singapore",
+        "within the United Kingdom", "within the customer-selected country")),
+    ("evaluation_cadence", "model evaluation cadence", "rerunning quality evaluations", (
+        "before every production promotion", "once each week", "after each training run",
+        "on the first business day monthly", "whenever the retrieval corpus changes")),
+    ("holiday_calendar", "working holiday calendar", "scheduling around public holidays", (
+        "the Madrid regional calendar", "the Bavarian calendar", "the Scotland calendar",
+        "the Ontario calendar", "the New South Wales calendar")),
+    ("secret_vault", "credential vault selection", "storing service credentials", (
+        "HashiCorp Vault", "AWS Secrets Manager", "Google Secret Manager", "Azure Key Vault",
+        "a self-hosted SOPS repository")),
+    ("document_naming", "document naming convention", "naming finalized documents", (
+        "date then project then version", "project then document type then date",
+        "client code then sequence number", "year-month then descriptive title", "ticket number then revision")),
+    ("runner_architecture", "build runner architecture", "executing continuous-integration builds", (
+        "Linux on x86-64", "Linux on ARM64", "macOS on Apple silicon", "Windows on x86-64",
+        "a mixed ARM64 and x86-64 pool")),
+    ("service_retry", "service request retry policy", "retrying a failed service call", (
+        "three exponential retries with jitter", "one immediate retry", "two linear backoff retries",
+        "no automatic retry for writes", "retry until a thirty-second deadline")),
+    ("backup_retention", "database backup retention", "keeping database recovery copies", (
+        "seven daily and four weekly copies", "thirty daily copies", "twelve monthly copies",
+        "ninety days of point-in-time recovery", "one yearly copy plus eight weekly copies")),
+    ("invoice_language", "invoice language preference", "writing customer invoices", (
+        "Spanish", "German", "English", "French", "Italian")),
+    ("code_editor", "preferred code editor", "opening source files", (
+        "Visual Studio Code", "Neovim", "IntelliJ IDEA", "Zed", "Emacs")),
+    ("video_resolution", "recorded video resolution", "exporting meeting recordings", (
+        "1080p at thirty frames per second", "720p at thirty frames per second",
+        "1440p at thirty frames per second", "1080p at sixty frames per second", "4K at twenty-four frames per second")),
+    ("ticket_priority", "support ticket priority rule", "ordering incoming support work", (
+        "production blockers before feature questions", "contractual deadlines before general requests",
+        "security reports before usability defects", "data integrity issues before performance complaints",
+        "oldest urgent ticket first")),
+    ("export_delivery", "customer export delivery", "sending a completed customer export", (
+        "a time-limited encrypted link", "a customer-owned object-store bucket", "an SFTP drop",
+        "a signed download package", "a secure portal notification")),
+    ("api_versioning", "application programming interface versioning", "introducing incompatible API changes", (
+        "a new date-based version", "a new major semantic version", "a versioned media type",
+        "a separate endpoint namespace", "a compatibility header with a sunset date")),
+    ("package_registry", "internal package registry", "publishing private software packages", (
+        "GitHub Packages", "GitLab Package Registry", "JFrog Artifactory", "Sonatype Nexus",
+        "a cloud artifact registry")),
+    ("formatter_policy", "source formatting policy", "formatting code before review", (
+        "run the formatter in continuous integration", "format on every local save",
+        "apply formatting in a pre-commit hook", "use a review bot to suggest formatting",
+        "require an explicit formatting command")),
+    ("maintenance_window", "routine maintenance window", "performing planned service maintenance", (
+        "Sunday from 01:00 to 03:00 UTC", "Wednesday from 22:00 to 23:30 UTC",
+        "Saturday from 04:00 to 06:00 UTC", "Tuesday from 00:30 to 02:00 UTC",
+        "the first Friday monthly from 20:00 to 22:00 UTC")),
+    ("time_tracking", "work time tracking interval", "recording project time", (
+        "fifteen-minute increments", "six-minute increments", "half-hour increments",
+        "one-minute precision", "daily totals without intervals")),
+)
+
+_DEFINITIVE_V3_QUERY_FRAMES = (
+    "What did we decide about {subject}?",
+    "Which earlier choice governs {subject}?",
+    "Recall the saved arrangement for {subject}.",
+    "What preference should I use for {subject}?",
+    "Which policy was recorded for {subject}?",
+)
+
+
+def _build_definitive_v3_semantic_pool() -> tuple[dict[str, Any], ...]:
+    items: list[dict[str, Any]] = []
+    for concept_id, storage_label, query_subject, values in _DEFINITIVE_V3_SEMANTIC_SCHEMAS:
+        for value_index, value in enumerate(values):
+            rejected_a = values[(value_index + 1) % len(values)]
+            rejected_b = values[(value_index + 4) % len(values)]
+            items.append(
+                {
+                    "concept_id": f"v3_{concept_id}_{value_index + 1:02d}",
+                    "stored": f"Adopted preference: {storage_label} = {value}.",
+                    "queries": (
+                        _DEFINITIVE_V3_QUERY_FRAMES[value_index].format(subject=query_subject),
+                    ),
+                    "answer_facts": (value,),
+                    "distractors": (
+                        f"An assistant draft considered {rejected_a} for {query_subject}, but it was not approved.",
+                        f"A rejected alternative listed {rejected_b} for {query_subject}.",
+                    ),
+                }
+            )
+    return tuple(items)
+
+
+SEMANTIC_DEFINITIVE_V3_POOL = _build_definitive_v3_semantic_pool()
+
+
 def event(
     *,
     event_id: str,
@@ -353,18 +554,17 @@ def same_session_overflow(case: dict[str, Any]) -> None:
 
 
 def cross_session_recall(case: dict[str, Any]) -> None:
-    patient = case["patient_id"]
     condition = case["metadata"]["condition"]
-    pmid = f"PMID {30_000_000 + int(case['case_id'][-4:])}"
+    index = int(case["case_id"][-4:])
+    anchor = f"REF-QZ-{70_000 + index:05d}"
+    pmid = f"PMID {30_000_000 + index}"
     user = case["owner_user_id"]
-    # Distractors: other conditions + PMIDs for OTHER patients in earlier
-    # sessions, lexically similar identifiers but wrong answers. Only the
-    # matching patient_id anchors the correct memory. Tests identifier fidelity
-    # under identifier-rich distractors.
-    other_patient_a = patient.replace("SYN-CRO-", "SYN-CRO-DIST-")
-    other_patient_b = patient.replace("SYN-CRO-", "SYN-CRO-DST2-")
-    other_condition = CONDITIONS[(int(case["case_id"][-4:]) + 1) % len(CONDITIONS)]
-    other_pmid = f"PMID {31_000_000 + int(case['case_id'][-4:])}"
+    # The query carries an opaque anchor that sparse retrieval can match exactly
+    # but the structural patient-identifier guard does not recognize. Nearby
+    # anchors prevent a guarded dense retriever from receiving a single-candidate
+    # shortcut and preserve this family as a lexical cross-session stress test.
+    other_condition = CONDITIONS[(index + 1) % len(CONDITIONS)]
+    other_pmid = f"PMID {31_000_000 + index}"
     case["events"].extend(
         [
             event(
@@ -372,45 +572,54 @@ def cross_session_recall(case: dict[str, Any]) -> None:
                 user_id=user,
                 session_id=f"{case['memory_session_id']}-distract-a",
                 timestamp=0.5,
-                text=f"Earlier note: synthetic {other_patient_a} has {other_condition}; evidence anchor is {other_pmid}.",
+                text=f"Earlier note: reference REF-QZ-{71_000 + index:05d} has {other_condition}; evidence citation is {other_pmid}.",
             ),
             event(
                 event_id=f"{case['case_id']}-dist-b",
                 user_id=user,
                 session_id=f"{case['memory_session_id']}-distract-b",
                 timestamp=0.7,
-                text=f"Earlier note: synthetic {other_patient_b} has asthma; evidence anchor is PMID 32990001.",
+                text=f"Earlier note: reference REF-QZ-{72_000 + index:05d} has asthma; evidence citation is PMID 32990001.",
             ),
             event(
                 event_id=f"{case['case_id']}-fact",
                 user_id=user,
                 session_id=case["memory_session_id"],
                 timestamp=1.0,
-                text=f"Remember that synthetic {patient} has {condition}; evidence anchor is {pmid}.",
+                text=f"Remember that reference {anchor} has {condition}; evidence citation is {pmid}.",
             ),
         ]
     )
-    case["query"] = f"Across our earlier conversation, what condition and PMID belong to {patient}?"
-    case["required_facts"] = [patient, condition, pmid]
+    case["query"] = f"Across our earlier conversation, what condition and PMID belong to {anchor}?"
+    case["required_facts"] = [anchor, condition, pmid]
     case["answer_facts"] = [condition, pmid]
+    case["metadata"]["opaque_anchor"] = anchor
 
 
 def semantic_paraphrase(case: dict[str, Any]) -> None:
     idx = int(case["case_id"][-4:])
     profile = str(case["metadata"].get("semantic_profile", "legacy"))
-    if profile in {"development", "heldout", "definitive"}:
+    if profile in {"development", "heldout", "definitive", "definitive_v2", "definitive_v3"}:
         pool = (
             SEMANTIC_DEVELOPMENT_POOL
             if profile == "development"
             else (
                 SEMANTIC_HELDOUT_POOL
                 if profile == "heldout"
-                else SEMANTIC_DEFINITIVE_POOL
+                else (
+                    SEMANTIC_DEFINITIVE_POOL
+                    if profile == "definitive"
+                    else (
+                        SEMANTIC_DEFINITIVE_V2_POOL
+                        if profile == "definitive_v2"
+                        else SEMANTIC_DEFINITIVE_V3_POOL
+                    )
+                )
             )
         )
-        if profile == "definitive" and idx >= len(pool):
+        if profile in {"definitive", "definitive_v2", "definitive_v3"} and idx >= len(pool):
             raise ValueError(
-                f"definitive semantic pool contains {len(pool)} independent cases; "
+                f"{profile} semantic pool contains {len(pool)} independent cases; "
                 f"requested index {idx} would repeat a concept"
             )
         item = pool[idx % len(pool)]
@@ -566,7 +775,6 @@ def cross_user_isolation(case: dict[str, Any]) -> None:
 
 
 def cross_patient_disambiguation(case: dict[str, Any]) -> None:
-    case["query_session_id"] = case["memory_session_id"]
     patient_a = case["patient_id"]
     patient_b = patient_a.replace("SYN-", "SYN-OTHER-")
     # Additional distractor patients with overlapping medication classes so

@@ -39,6 +39,45 @@ def test_case_generation_is_byte_reproducible_and_synthetic():
     assert all(case["patient_id"].startswith("Patient/SYN-") for case in first)
 
 
+def test_cross_patient_disambiguation_is_a_cross_session_retrieval_task():
+    config = tiny_config()
+    case = next(
+        case for case in generate(config) if case["family"] == "cross_patient_disambiguation"
+    )
+
+    assert case["query_session_id"] != case["memory_session_id"]
+
+
+def test_context_success_enforces_required_forbidden_and_budget():
+    case = {
+        "case_id": "strict-criterion",
+        "family": "temporal_update",
+        "query": "What is current?",
+        "events": [],
+        "required_facts": ["new fact"],
+        "answer_facts": ["new fact"],
+        "forbidden_facts": ["old fact"],
+        "answerable": True,
+        "isolation_test": False,
+        "metadata": {},
+    }
+    messages = [
+        {"role": "user", "content": "new fact and old fact"},
+        {"role": "user", "content": case["query"]},
+    ]
+    result = evaluate_context(
+        case,
+        messages,
+        condition="fused_hybrid",
+        budget=4000,
+        diagnostics={},
+    )
+
+    assert result["all_required_present"]
+    assert not result["no_forbidden_present"]
+    assert not result["context_success"]
+
+
 def test_hybrid_recalls_cross_session_fact_that_short_term_cannot(tmp_path):
     config = tiny_config()
     case = next(case for case in generate(config) if case["family"] == "cross_session_recall")

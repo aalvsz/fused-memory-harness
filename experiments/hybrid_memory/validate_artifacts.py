@@ -165,11 +165,25 @@ def main() -> int:
         all(row.get("current_prompt_exact") is True for row in contexts),
         f"failures={sum(row.get('current_prompt_exact') is not True for row in contexts)}",
     )
-    gated = [row for row in contexts if row.get("condition") != "raw_recent"]
     check(
-        "gated_conditions_respect_budget",
-        all(row.get("budget_compliant") is True for row in gated),
-        f"failures={sum(row.get('budget_compliant') is not True for row in gated)}",
+        "all_conditions_respect_budget",
+        all(row.get("budget_compliant") is True for row in contexts),
+        f"failures={sum(row.get('budget_compliant') is not True for row in contexts)}",
+    )
+    strict_success_mismatches = [
+        row
+        for row in contexts
+        if bool(row.get("context_success"))
+        != (
+            bool(row.get("all_required_present"))
+            and bool(row.get("no_forbidden_present"))
+            and bool(row.get("budget_compliant"))
+        )
+    ]
+    check(
+        "context_success_enforces_required_forbidden_and_budget",
+        not strict_success_mismatches,
+        f"mismatches={len(strict_success_mismatches)}",
     )
     isolation_rows = [
         row

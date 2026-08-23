@@ -10,11 +10,8 @@ __pycache__/
 build/
 dist/
 
-# Generated benchmark runs. The compact frozen evidence under
-# autoresearch/definitive-260810-1745 is intentionally tracked.
-autoresearch/run-*/
-autoresearch/smoke-*/
-autoresearch/definitive-*/context-results*.jsonl
+# Generated benchmark runs and experimental result artifacts stay local.
+autoresearch/
 
 # Generated document build products.
 *.aux
